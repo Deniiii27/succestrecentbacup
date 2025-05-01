@@ -1,0 +1,66 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.13.35931.197
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DataWizard.UI", "DataWizard.UI\DataWizard.UI.csproj", "{2008ADCA-12F1-4F9E-9AF0-ECABB12B4922}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DataWizard.Core", "DataWizard.Core\DataWizard.Core.csproj", "{7FDDF616-BC81-4466-A414-25AACF2BF731}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "PythonEngine", "PythonEngine", "{8EC462FD-D22E-90A8-E5CE-7E832BA40C5D}"
+	ProjectSection(SolutionItems) = preProject
+		PythonEngine\analysis_prompt.py = PythonEngine\analysis_prompt.py
+		PythonEngine\api_client.py = PythonEngine\api_client.py
+		PythonEngine\file_parser.py = PythonEngine\file_parser.py
+		PythonEngine\main.py = PythonEngine\main.py
+		PythonEngine\output_writer.py = PythonEngine\output_writer.py
+	EndProjectSection
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|ARM64 = Debug|ARM64
+		Debug|x64 = Debug|x64
+		Debug|x86 = Debug|x86
+		Release|ARM64 = Release|ARM64
+		Release|x64 = Release|x64
+		Release|x86 = Release|x86
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{2008ADCA-12F1-4F9E-9AF0-ECABB12B4922}.Debug|ARM64.ActiveCfg = Debug|ARM64
+		{2008ADCA-12F1-4F9E-9AF0-ECABB12B4922}.Debug|ARM64.Build.0 = Debug|ARM64
+		{2008ADCA-12F1-4F9E-9AF0-ECABB12B4922}.Debug|ARM64.Deploy.0 = Debug|ARM64
+		{2008ADCA-12F1-4F9E-9AF0-ECABB12B4922}.Debug|x64.ActiveCfg = Debug|x64
+		{2008ADCA-12F1-4F9E-9AF0-ECABB12B4922}.Debug|x64.Build.0 = Debug|x64
+		{2008ADCA-12F1-4F9E-9AF0-ECABB12B4922}.Debug|x64.Deploy.0 = Debug|x64
+		{2008ADCA-12F1-4F9E-9AF0-ECABB12B4922}.Debug|x86.ActiveCfg = Debug|x86
+		{2008ADCA-12F1-4F9E-9AF0-ECABB12B4922}.Debug|x86.Build.0 = Debug|x86
+		{2008ADCA-12F1-4F9E-9AF0-ECABB12B4922}.Debug|x86.Deploy.0 = Debug|x86
+		{2008ADCA-12F1-4F9E-9AF0-ECABB12B4922}.Release|ARM64.ActiveCfg = Release|ARM64
+		{2008ADCA-12F1-4F9E-9AF0-ECABB12B4922}.Release|ARM64.Build.0 = Release|ARM64
+		{2008ADCA-12F1-4F9E-9AF0-ECABB12B4922}.Release|ARM64.Deploy.0 = Release|ARM64
+		{2008ADCA-12F1-4F9E-9AF0-ECABB12B4922}.Release|x64.ActiveCfg = Release|x64
+		{2008ADCA-12F1-4F9E-9AF0-ECABB12B4922}.Release|x64.Build.0 = Release|x64
+		{2008ADCA-12F1-4F9E-9AF0-ECABB12B4922}.Release|x64.Deploy.0 = Release|x64
+		{2008ADCA-12F1-4F9E-9AF0-ECABB12B4922}.Release|x86.ActiveCfg = Release|x86
+		{2008ADCA-12F1-4F9E-9AF0-ECABB12B4922}.Release|x86.Build.0 = Release|x86
+		{2008ADCA-12F1-4F9E-9AF0-ECABB12B4922}.Release|x86.Deploy.0 = Release|x86
+		{7FDDF616-BC81-4466-A414-25AACF2BF731}.Debug|ARM64.ActiveCfg = Debug|Any CPU
+		{7FDDF616-BC81-4466-A414-25AACF2BF731}.Debug|ARM64.Build.0 = Debug|Any CPU
+		{7FDDF616-BC81-4466-A414-25AACF2BF731}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{7FDDF616-BC81-4466-A414-25AACF2BF731}.Debug|x64.Build.0 = Debug|Any CPU
+		{7FDDF616-BC81-4466-A414-25AACF2BF731}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{7FDDF616-BC81-4466-A414-25AACF2BF731}.Debug|x86.Build.0 = Debug|Any CPU
+		{7FDDF616-BC81-4466-A414-25AACF2BF731}.Release|ARM64.ActiveCfg = Release|Any CPU
+		{7FDDF616-BC81-4466-A414-25AACF2BF731}.Release|ARM64.Build.0 = Release|Any CPU
+		{7FDDF616-BC81-4466-A414-25AACF2BF731}.Release|x64.ActiveCfg = Release|Any CPU
+		{7FDDF616-BC81-4466-A414-25AACF2BF731}.Release|x64.Build.0 = Release|Any CPU
+		{7FDDF616-BC81-4466-A414-25AACF2BF731}.Release|x86.ActiveCfg = Release|Any CPU
+		{7FDDF616-BC81-4466-A414-25AACF2BF731}.Release|x86.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {C722E9A5-E7C3-4228-8DC6-61E38C68A1A6}
+	EndGlobalSection
+EndGlobal

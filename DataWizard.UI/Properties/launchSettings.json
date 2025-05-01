@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "DataWizard.UI (Package)": {
+      "commandName": "MsixPackage"
+    },
+    "DataWizard.UI (Unpackaged)": {
+      "commandName": "Project"
+    }
+  }
+}
