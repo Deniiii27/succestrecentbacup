@@ -1,9 +1,9 @@
-using Microsoft.UI.Xaml;
+﻿using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Windows.Storage.Pickers;
 using System;
-using System.Threading.Tasks;
 using System.IO;
+using System.Threading.Tasks;
 using DataWizard.Core.Services;
 
 namespace DataWizard.UI
@@ -24,8 +24,7 @@ namespace DataWizard.UI
             picker.SuggestedStartLocation = PickerLocationId.DocumentsLibrary;
             picker.FileTypeFilter.Add(".xlsx");
 
-            // Dapatkan window handle dari root AppWindow
-            var hwnd = WinRT.Interop.WindowNative.GetWindowHandle(App.Window); // <== Tambahkan property Window di App.xaml.cs
+            var hwnd = WinRT.Interop.WindowNative.GetWindowHandle(App.Window);
             WinRT.Interop.InitializeWithWindow.Initialize(picker, hwnd);
 
             var file = await picker.PickSingleFileAsync();
@@ -48,10 +47,21 @@ namespace DataWizard.UI
 
             string result = await PythonRunner.RunPythonScriptAsync(selectedExcelPath, outputTextPath, PromptBox.Text);
 
-            if (File.Exists(outputTextPath))
+            if (result == "Success" && File.Exists(outputTextPath))
             {
                 string hasil = File.ReadAllText(outputTextPath);
                 OutputBox.Text = hasil;
+
+                // Cek file hasil parsing
+                string parsedExcelPath = PythonRunner.GetParsedExcelPath(outputTextPath);
+                if (File.Exists(parsedExcelPath))
+                {
+                    OutputBox.Text += $"\n\n✔ File hasil parsing tersimpan di:\n{parsedExcelPath}";
+                }
+                else
+                {
+                    OutputBox.Text += "\n\n⚠ File hasil parsing tidak ditemukan.";
+                }
             }
             else
             {
