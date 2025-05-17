@@ -1,10 +1,10 @@
-﻿using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml;
 
 namespace DataWizard.UI
 {
     public partial class App : Application
     {
-        public static Window Window { get; private set; } // Global window reference
+        public static Window Window { get; private set; }
 
         public App()
         {
@@ -13,8 +13,7 @@ namespace DataWizard.UI
 
         protected override void OnLaunched(Microsoft.UI.Xaml.LaunchActivatedEventArgs args)
         {
-            Window = new Window();
-            Window.Content = new MainWindow(); // MainWindow sekarang adalah Page
+            Window = new MainWindow();
             Window.Activate();
         }
     }

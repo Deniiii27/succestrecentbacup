@@ -1,4 +1,4 @@
-﻿using System.Diagnostics;
+using System.Diagnostics;
 using System.IO;
 using System.Threading.Tasks;
 
@@ -9,12 +9,12 @@ namespace DataWizard.Core.Services
         private static readonly string pythonExePath = @"C:\Python312\python.exe"; // Ganti sesuai path Python kamu
         private static readonly string scriptPath = @"C:\Project PBTGM\DataWizard.App\PythonEngine\main.py";
 
-        public static async Task<string> RunPythonScriptAsync(string excelPath, string outputTxtPath, string prompt)
+        public static async Task<string> RunPythonScriptAsync(string filePath, string outputTxtPath, string prompt, string outputFormat, string mode)
         {
             var psi = new ProcessStartInfo
             {
                 FileName = pythonExePath,
-                Arguments = $"\"{scriptPath}\" \"{excelPath}\" \"{outputTxtPath}\" \"{prompt}\"",
+                Arguments = $"\"{scriptPath}\" \"{filePath}\" \"{outputTxtPath}\" \"{prompt}\" \"{outputFormat}\" \"{mode}\"",
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
                 UseShellExecute = false,
@@ -45,6 +45,7 @@ namespace DataWizard.Core.Services
 
             return result;
         }
+
 
         public static string GetParsedExcelPath(string outputTxtPath)
         {
