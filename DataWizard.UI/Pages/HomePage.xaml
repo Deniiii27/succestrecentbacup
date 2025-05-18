@@ -7,15 +7,13 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d"
     Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
-
+    <!-- KODE SUCCEST RECENT FILE 18/05/2025 -->
     <Grid>
         <!-- Main layout with sidebar and content -->
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="Auto"/>
             <ColumnDefinition Width="*"/>
         </Grid.ColumnDefinitions>
-
-        
 
         <!-- Main Content -->
         <Grid Grid.Column="1" Padding="24">
@@ -122,12 +120,12 @@
                       CornerRadius="12"
                       Padding="24">
                     <StackPanel>
-                        <TextBlock Text="Recent Files" 
+                        <TextBlock Text="Recent Activities" 
                                  FontSize="20" 
                                  FontWeight="SemiBold"
                                  Margin="0,0,0,24"
                                  HorizontalAlignment="Center"/>
-                        <StackPanel x:Name="RecentFilesPanel" Spacing="16"/>
+                        <StackPanel x:Name="RecentFilesPanel" Spacing="8"/>
                     </StackPanel>
                 </Grid>
 
