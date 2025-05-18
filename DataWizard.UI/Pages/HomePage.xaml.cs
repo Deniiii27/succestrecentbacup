@@ -42,6 +42,7 @@ namespace DataWizard.UI.Pages
                 var recentFiles = await _dbService.GetRecentFilesAsync(_currentUserId);
                 var folders = await _dbService.GetUserFoldersAsync(_currentUserId);
                 var chartData = await _dbService.GetFileTypeStatsAsync(_currentUserId);
+                var history = await _dbService.GetRecentHistoryAsync(_currentUserId, 5);
 
                 _recentFiles.Clear();
                 _folders.Clear();
@@ -62,7 +63,7 @@ namespace DataWizard.UI.Pages
                     _chartData.Add(data);
                 }
 
-                UpdateRecentFiles();
+                UpdateRecentFiles(history);
                 UpdateFolders();
                 UpdateChart();
             }
@@ -85,22 +86,66 @@ namespace DataWizard.UI.Pages
             await dialog.ShowAsync();
         }
 
-        private void UpdateRecentFiles()
+        private void UpdateRecentFiles(List<HistoryItem> historyItems)
         {
             RecentFilesPanel.Children.Clear();
-            foreach (var file in _recentFiles)
+            foreach (var item in historyItems)
             {
-                var fileType = GetFileType(file.FileName);
-                RecentFilesPanel.Children.Add(new FileItem
+                var historyControl = new StackPanel
                 {
-                    FileName = file.FileName,
-                    FileType = fileType
+                    Orientation = Orientation.Horizontal,
+                    Spacing = 12,
+                    Margin = new Thickness(0, 0, 0, 16)
+                };
+
+                // Add icon based on output format
+                var icon = new Image
+                {
+                    Width = 24,
+                    Height = 24,
+                    Source = GetFormatIcon(item.OutputFormat)
+                };
+
+                // Add text information
+                var textPanel = new StackPanel();
+                textPanel.Children.Add(new TextBlock
+                {
+                    Text = $"{item.InputType} ? {item.OutputFormat}",
+                    FontWeight = FontWeights.SemiBold
                 });
+                textPanel.Children.Add(new TextBlock
+                {
+                    Text = FormatTime(item.ProcessDate),
+                    Foreground = new SolidColorBrush(Colors.Gray),
+                    FontSize = 12
+                });
+
+                historyControl.Children.Add(icon);
+                historyControl.Children.Add(textPanel);
+
+                RecentFilesPanel.Children.Add(historyControl);
             }
         }
 
-        
+        private BitmapImage GetFormatIcon(string format)
+        {
+            string iconPath = format.ToLower() switch
+            {
+                "word" => "ms-appx:///Assets/Microsoft Word 2024.png",
+                "excel" => "ms-appx:///Assets/Microsoft Excel 2025.png",
+                _ => "ms-appx:///Assets/File.png"
+            };
+            return new BitmapImage(new Uri(iconPath));
+        }
 
+        private string FormatTime(DateTime date)
+        {
+            TimeSpan diff = DateTime.Now - date;
+            if (diff.TotalMinutes < 1) return "Just now";
+            if (diff.TotalHours < 1) return $"{(int)diff.TotalMinutes}m ago";
+            if (diff.TotalDays < 1) return $"{(int)diff.TotalHours}h ago";
+            return date.ToString("dd MMM yyyy");
+        }
         private string FormatFileSize(long bytes)
         {
             string[] sizes = { "B", "KB", "MB", "GB" };
@@ -115,7 +160,6 @@ namespace DataWizard.UI.Pages
 
             return $"{len:0.##} {sizes[order]}";
         }
-
         private void UpdateFolders()
         {
             FoldersPanel.Children.Clear();
@@ -127,7 +171,6 @@ namespace DataWizard.UI.Pages
                 });
             }
         }
-
         private void UpdateChart()
         {
             // Update chart visualization based on _chartData
@@ -147,7 +190,7 @@ namespace DataWizard.UI.Pages
                     return "Unknown";
             }
         }
-
+        // ... [Rest of your existing methods remain unchanged] ...
         #region Event Handlers
         private void AddButton_Click(object sender, RoutedEventArgs e)
         {
@@ -181,7 +224,19 @@ namespace DataWizard.UI.Pages
 
         private void UserProfileButton_Click(object sender, RoutedEventArgs e)
         {
-            // Show user profile menu
+            // Show user profile menu or navigate to profile page
+            // You can implement this based on your requirements
+            // For now, we'll just show a simple message
+            Debug.WriteLine("User profile button clicked");
+
+            // Example: Show a flyout or dialog
+            /*
+            var flyout = new MenuFlyout();
+            flyout.Items.Add(new MenuFlyoutItem { Text = "My Profile" });
+            flyout.Items.Add(new MenuFlyoutItem { Text = "Settings" });
+            flyout.Items.Add(new MenuFlyoutItem { Text = "Sign Out" });
+            flyout.ShowAt(UserProfileButton);
+            */
         }
 
         private void NewProjectButton_Click(object sender, RoutedEventArgs e)
@@ -191,7 +246,6 @@ namespace DataWizard.UI.Pages
         }
         #endregion
     }
-
     public sealed class FileItem : Grid
     {
         public FileItem()
