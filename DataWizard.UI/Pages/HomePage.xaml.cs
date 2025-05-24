@@ -13,6 +13,9 @@ using Microsoft.UI.Xaml.Shapes;
 using Windows.UI.Text;
 using Microsoft.UI.Text;
 using System.Collections.Generic;
+using DataWizardUI.Helpers;
+using Microsoft.UI.Dispatching;
+using Windows.System;
 
 namespace DataWizard.UI.Pages
 {
@@ -22,18 +25,26 @@ namespace DataWizard.UI.Pages
         private ObservableCollection<OutputFile> _recentFiles;
         private ObservableCollection<Folder> _folders;
         private ObservableCollection<ChartData> _chartData;
-        private readonly int _currentUserId = 1; // Temporary hardcoded user ID for testing
+        private readonly ChartHelper _chartHelper;
+        private readonly int _currentUserId = 1; // hardcoded
 
         public HomePage()
         {
-            this.InitializeComponent();
+            InitializeComponent();
             _dbService = new DatabaseService();
             _recentFiles = new ObservableCollection<OutputFile>();
             _folders = new ObservableCollection<Folder>();
             _chartData = new ObservableCollection<ChartData>();
 
-            LoadData();
+
+            _chartHelper = new ChartHelper(
+                "Server=DESKTOP-01G7KT1\\SQLEXPRESS;Database=Quicklisticks;Trusted_Connection=True;");
+
+            // Mulai satu-satunya pipeline inisialisasi data & UI
+            _ = InitializePageAsync();
         }
+
+
 
         private async void LoadData()
         {
@@ -70,6 +81,78 @@ namespace DataWizard.UI.Pages
             catch (Exception ex)
             {
                 Debug.WriteLine($"Error loading data: {ex.Message}");
+                await ShowErrorDialog("Failed to load data", ex.Message);
+            }
+        }
+        private async Task InitializePageAsync()
+        {
+            await LoadDataAsync();   // di sini juga sudah termasuk refresh chart
+        }
+
+        private async Task LoadChartDataAsync()
+{
+    try
+    {
+        Debug.WriteLine("Memulai load data chart...");
+
+        var (values, labels) = await _chartHelper.GetFileTypeUsageDataAsync(_currentUserId);
+
+        Debug.WriteLine($"Data yang diterima:");
+        Debug.WriteLine($"Labels: {string.Join(", ", labels)}");
+        Debug.WriteLine($"Values: {string.Join(", ", values)}");
+
+        // Gunakan TryEnqueue sebagai ganti EnqueueAsync
+        DispatcherQueue.TryEnqueue(() =>
+        {
+            _chartHelper.ConfigureColumnChart(UsageChart, values, labels);
+        });
+    }
+    catch (Exception ex)
+    {
+        Debug.WriteLine($"Error LoadChartDataAsync: {ex}");
+    }
+}
+
+        private void UsageChart_Loaded(object sender, RoutedEventArgs e)
+        {
+            Debug.WriteLine("Chart control loaded");
+            _ = LoadChartDataAsync();
+        }
+
+        private async Task LoadDataAsync()
+        {
+            try
+            {
+                // 1. Ambil data Recent Files, Folders, ChartData (untuk binding lama), dan History
+                var recentFiles = await _dbService.GetRecentFilesAsync(_currentUserId);
+                var folders = await _dbService.GetUserFoldersAsync(_currentUserId);
+                var chartData = await _dbService.GetFileTypeStatsAsync(_currentUserId);
+                var history = await _dbService.GetRecentHistoryAsync(_currentUserId, 5);
+
+                // 2. Update koleksi ObservableCollection milikmu
+                _recentFiles.Clear();
+                foreach (var file in recentFiles)
+                    _recentFiles.Add(file);
+
+                _folders.Clear();
+                foreach (var folder in folders)
+                    _folders.Add(folder);
+
+                _chartData.Clear();
+                foreach (var data in chartData)
+                    _chartData.Add(data);
+
+                // 3. Update UI panel Recent Files dan Folders
+                UpdateRecentFiles(history);
+                UpdateFolders();
+
+                // 4. Refresh ScottPlot chart dengan data baru dari DB
+                var (values, labels) = await _chartHelper.GetFileTypeUsageDataAsync();
+                _chartHelper.ConfigureColumnChart(UsageChart, values, labels);
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Error loading data: {ex}");
                 await ShowErrorDialog("Failed to load data", ex.Message);
             }
         }
