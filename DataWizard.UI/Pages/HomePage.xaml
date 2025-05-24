@@ -5,8 +5,9 @@
     xmlns:local="using:DataWizard.UI.Pages"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:ScottPlot="using:ScottPlot.WinUI"
     mc:Ignorable="d"
-    Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
+    Background="White">
     <!-- KODE SUCCEST RECENT FILE 18/05/2025 -->
     <Grid>
         <!-- Main layout with sidebar and content -->
@@ -118,7 +119,8 @@
                       BorderBrush="#a9c7f7" 
                       BorderThickness="2" 
                       CornerRadius="12"
-                      Padding="24">
+                      Padding="24"
+                      Background="White">
                     <StackPanel>
                         <TextBlock Text="Recent Activities" 
                                  FontSize="20" 
@@ -130,29 +132,33 @@
                 </Grid>
 
                 <!-- Chart -->
-                <Grid Grid.Column="1" 
-                      BorderBrush="#a9c7f7" 
-                      BorderThickness="2" 
-                      CornerRadius="12"
-                      Padding="24">
+                <!-- Chart -->
+                <Grid Grid.Column="1"
+      BorderBrush="#a9c7f7"
+      BorderThickness="2"
+      CornerRadius="12"
+      Padding="24"
+      Background="White">
                     <StackPanel>
-                        <TextBlock Text="Usage Statistics" 
-                                 FontSize="20" 
-                                 FontWeight="SemiBold"
-                                 Margin="0,0,0,24"
-                                 HorizontalAlignment="Center"/>
-                        <Image Source="/Assets/Chart.png" 
-                               Height="200"
-                               Stretch="Uniform"/>
+                        <TextBlock Text="Usage Statistics"
+                   FontSize="20"
+                   FontWeight="SemiBold"
+                   Margin="0,0,0,24"
+                   HorizontalAlignment="Center"/>
+                        <ScottPlot:WinUIPlot x:Name="UsageChart" 
+                    Height="300"
+                    Background="White"
+                    Loaded="UsageChart_Loaded"/>
                     </StackPanel>
                 </Grid>
-
+                <!-- Rest of your existing XAML code -->
                 <!-- Folders -->
                 <Grid Grid.Column="2" 
                       BorderBrush="#a9c7f7" 
                       BorderThickness="2" 
                       CornerRadius="12"
-                      Padding="24">
+                      Padding="24"
+                      Background="White">
                     <StackPanel>
                         <TextBlock Text="Folders" 
                                  FontSize="20" 
