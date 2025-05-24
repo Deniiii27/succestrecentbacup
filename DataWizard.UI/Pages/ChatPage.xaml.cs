@@ -36,83 +36,83 @@ namespace DataWizard.UI.Pages
         }
 
         // ... (kode lainnya tetap sama sampai RunButton_Click)
-	private async void LoadUserPreferences()
-{
-    try
-    {
-        string preferredFormat = await _dbService.GetUserPreferredFormatAsync(_currentUserId);
-
-        // Reset format buttons
-        WordFormatButton.Style = Resources["DefaultFormatButtonStyle"] as Style;
-        ExcelFormatButton.Style = Resources["DefaultFormatButtonStyle"] as Style;
-
-        // Set preferred format
-        if (preferredFormat == "word")
+        private async void LoadUserPreferences()
         {
-            WordFormatButton.Style = Resources["SelectedFormatButtonStyle"] as Style;
-            OutputFormatBox.SelectedIndex = 2;
+            try
+            {
+                string preferredFormat = await _dbService.GetUserPreferredFormatAsync(_currentUserId);
+
+                // Reset format buttons
+                WordFormatButton.Style = Resources["DefaultFormatButtonStyle"] as Style;
+                ExcelFormatButton.Style = Resources["DefaultFormatButtonStyle"] as Style;
+
+                // Set preferred format
+                if (preferredFormat == "word")
+                {
+                    WordFormatButton.Style = Resources["SelectedFormatButtonStyle"] as Style;
+                    OutputFormatBox.SelectedIndex = 2;
+                }
+                else // Default to Excel
+                {
+                    ExcelFormatButton.Style = Resources["SelectedFormatButtonStyle"] as Style;
+                    OutputFormatBox.SelectedIndex = 1;
+                }
+            }
+            catch (Exception ex)
+            {
+                // Silently fail and use default format
+                ExcelFormatButton.Style = Resources["SelectedFormatButtonStyle"] as Style;
+                OutputFormatBox.SelectedIndex = 1;
+            }
         }
-        else // Default to Excel
+
+        private async Task ShowDialogAsync(string title, string content)
         {
-            ExcelFormatButton.Style = Resources["SelectedFormatButtonStyle"] as Style;
-            OutputFormatBox.SelectedIndex = 1;
+            ContentDialog dialog = new ContentDialog
+            {
+                Title = title,
+                Content = content,
+                CloseButtonText = "OK",
+                XamlRoot = this.XamlRoot
+            };
+            await dialog.ShowAsync();
         }
-    }
-    catch (Exception ex)
-    {
-        // Silently fail and use default format
-        ExcelFormatButton.Style = Resources["SelectedFormatButtonStyle"] as Style;
-        OutputFormatBox.SelectedIndex = 1;
-    }
-}
 
-private async Task ShowDialogAsync(string title, string content)
-{
-    ContentDialog dialog = new ContentDialog
-    {
-        Title = title,
-        Content = content,
-        CloseButtonText = "OK",
-        XamlRoot = this.XamlRoot
-    };
-    await dialog.ShowAsync();
-}
+        private void PromptBox_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            CharCountText.Text = $"{PromptBox.Text.Length}/1000";
+        }
 
-private void PromptBox_TextChanged(object sender, TextChangedEventArgs e)
-{
-    CharCountText.Text = $"{PromptBox.Text.Length}/1000";
-}
+        private async Task<bool> SelectFileAsync()
+        {
+            var picker = new FileOpenPicker();
+            picker.SuggestedStartLocation = PickerLocationId.DocumentsLibrary;
+            picker.FileTypeFilter.Add(".xlsx");
+            picker.FileTypeFilter.Add(".xls");
+            picker.FileTypeFilter.Add(".csv");
+            picker.FileTypeFilter.Add(".docx");
+            picker.FileTypeFilter.Add(".pdf");
+            picker.FileTypeFilter.Add(".png");
+            picker.FileTypeFilter.Add(".jpg");
+            picker.FileTypeFilter.Add(".jpeg");
 
-private async Task<bool> SelectFileAsync()
-{
-    var picker = new FileOpenPicker();
-    picker.SuggestedStartLocation = PickerLocationId.DocumentsLibrary;
-    picker.FileTypeFilter.Add(".xlsx");
-    picker.FileTypeFilter.Add(".xls");
-    picker.FileTypeFilter.Add(".csv");
-    picker.FileTypeFilter.Add(".docx");
-    picker.FileTypeFilter.Add(".pdf");
-    picker.FileTypeFilter.Add(".png");
-    picker.FileTypeFilter.Add(".jpg");
-    picker.FileTypeFilter.Add(".jpeg");
+            var hwnd = WinRT.Interop.WindowNative.GetWindowHandle(App.Window);
+            WinRT.Interop.InitializeWithWindow.Initialize(picker, hwnd);
 
-    var hwnd = WinRT.Interop.WindowNative.GetWindowHandle(App.Window);
-    WinRT.Interop.InitializeWithWindow.Initialize(picker, hwnd);
+            var file = await picker.PickSingleFileAsync();
+            if (file != null)
+            {
+                selectedFilePath = file.Path;
+                OutputBox.Text = $"File dipilih: {selectedFilePath}";
+                return true;
+            }
+            return false;
+        }
 
-    var file = await picker.PickSingleFileAsync();
-    if (file != null)
-    {
-        selectedFilePath = file.Path;
-        OutputBox.Text = $"File dipilih: {selectedFilePath}";
-        return true;
-    }
-    return false;
-}
-
-private async void SelectFileButton_Click(object sender, RoutedEventArgs e)
-{
-    await SelectFileAsync();
-}
+        private async void SelectFileButton_Click(object sender, RoutedEventArgs e)
+        {
+            await SelectFileAsync();
+        }
 
         private async void RunButton_Click(object sender, RoutedEventArgs e)
         {
@@ -120,114 +120,233 @@ private async void SelectFileButton_Click(object sender, RoutedEventArgs e)
             string outputFormat = (OutputFormatBox.SelectedItem as ComboBoxItem)?.Content?.ToString().ToLower() ?? "txt";
             string mode = (ModeBox.SelectedItem as ComboBoxItem)?.Content?.ToString().ToLower() ?? "file";
 
-            if ((mode != "prompt-only" && string.IsNullOrWhiteSpace(selectedFilePath)) || string.IsNullOrWhiteSpace(prompt))
+            // Validasi berdasarkan mode
+            if (string.IsNullOrWhiteSpace(prompt))
             {
-                await ShowDialogAsync("Validation Error", "Harap pilih file (kecuali prompt-only) dan masukkan prompt terlebih dahulu.");
+                await ShowDialogAsync("Validation Error", "Harap masukkan prompt terlebih dahulu.");
                 return;
             }
 
-            // Mulai mengukur waktu proses
-            _processTimer.Restart();
-
-            // Simpan preferensi format pengguna
-            await _dbService.SaveUserPreferredFormatAsync(_currentUserId, outputFormat);
-
-            WelcomePanel.Visibility = Visibility.Collapsed;
-            AnswerBox.Visibility = Visibility.Visible;
-            OutputBox.Text = "Memproses data... Mohon tunggu.";
-
-            // Dapatkan tipe file input sebagai ID integer
-            int inputFileTypeId = !string.IsNullOrEmpty(selectedFilePath) ?
-                await _dbService.GetFileTypeId(System.IO.Path.GetExtension(selectedFilePath).TrimStart('.').ToUpper()) :
-                await _dbService.GetFileTypeId("PROMPT");
-
-            // Dapatkan output format ID
-            int outputFormatId = outputFormat == "word" ?
-                await _dbService.GetOutputFormatId("Word") :
-                await _dbService.GetOutputFormatId("Excel");
-
-            // Catat ke history sebelum proses dimulai
-            int historyId = await _dbService.LogHistoryAsync(
-                _currentUserId,
-                inputFileTypeId,
-                outputFormatId,
-                prompt,
-                mode);
-
-            string result = await PythonRunner.RunPythonScriptAsync(
-                mode == "prompt-only" ? "none" : selectedFilePath,
-                outputTextPath,
-                prompt,
-                outputFormat,
-                mode
-            );
-
-            // Hentikan timer dan dapatkan waktu proses
-            _processTimer.Stop();
-            int processingTimeMs = (int)_processTimer.ElapsedMilliseconds;
-
-            string outputFileName = string.Empty;
-            string outputFilePath = string.Empty;
-
-            if (result == "Success" && File.Exists(outputTextPath))
+            // Validasi khusus untuk mode file dan ocr
+            if ((mode == "file" || mode == "ocr") && string.IsNullOrWhiteSpace(selectedFilePath))
             {
-                string hasil = File.ReadAllText(outputTextPath);
-                OutputBox.Text = hasil;
+                await ShowDialogAsync("Validation Error", $"Harap pilih file terlebih dahulu untuk mode {mode.ToUpper()}.");
+                return;
+            }
 
-                string parsedExcelPath = PythonRunner.GetParsedExcelPath(outputTextPath);
+            // Validasi untuk mode OCR - pastikan file adalah gambar
+            if (mode == "ocr" && !string.IsNullOrEmpty(selectedFilePath))
+            {
+                string[] validImageExtensions = { ".jpg", ".jpeg", ".png", ".bmp", ".tiff" };
+                string fileExtension = System.IO.Path.GetExtension(selectedFilePath).ToLower();
 
-                if (File.Exists(parsedExcelPath))
+                if (!validImageExtensions.Contains(fileExtension))
                 {
-                    outputFilePath = parsedExcelPath;
-                    outputFileName = System.IO.Path.GetFileName(parsedExcelPath);
-                    ResultFileText.Text = outputFileName;
-                }
-                else if (outputFormat == "excel")
-                {
-                    OutputBox.Text += "\n\nFile hasil parsing Excel tidak ditemukan.";
-                }
-
-                // Update history dengan waktu proses
-                await _dbService.UpdateHistoryProcessingTimeAsync(historyId, processingTimeMs);
-
-                // Jika ada file output, simpan ke tabel OutputFile
-                if (!string.IsNullOrEmpty(outputFilePath))
-                {
-                    FileInfo fileInfo = new FileInfo(outputFilePath);
-                    await _dbService.LogOutputFileAsync(
-                        historyId,
-                        outputFileName,
-                        outputFilePath,
-                        fileInfo.Length);
+                    await ShowDialogAsync("Validation Error",
+                        $"File yang dipilih bukan format gambar yang didukung.\n" +
+                        $"Format yang didukung: JPG, JPEG, PNG, BMP, TIFF\n" +
+                        $"File Anda: {fileExtension}");
+                    return;
                 }
             }
-            else
+
+            try
             {
-                OutputBox.Text = $"Gagal: {result}";
-                // Jika gagal, update history dengan status gagal
-                await _dbService.UpdateHistoryStatusAsync(historyId, false, processingTimeMs);
+                // Mulai mengukur waktu proses
+                _processTimer.Restart();
+
+                // Simpan preferensi format pengguna
+                await _dbService.SaveUserPreferredFormatAsync(_currentUserId, outputFormat);
+
+                WelcomePanel.Visibility = Visibility.Collapsed;
+                AnswerBox.Visibility = Visibility.Visible;
+                OutputBox.Text = "Memproses data... Mohon tunggu.";
+
+                // Dapatkan tipe file input sebagai ID integer
+                int inputFileTypeId;
+                if (mode == "prompt-only")
+                {
+                    inputFileTypeId = await _dbService.GetFileTypeId("PROMPT");
+                }
+                else if (!string.IsNullOrEmpty(selectedFilePath))
+                {
+                    string fileExtension = System.IO.Path.GetExtension(selectedFilePath).TrimStart('.').ToUpper();
+                    inputFileTypeId = await _dbService.GetFileTypeId(fileExtension);
+                }
+                else
+                {
+                    inputFileTypeId = await _dbService.GetFileTypeId("UNKNOWN");
+                }
+
+                // Dapatkan output format ID
+                int outputFormatId = outputFormat == "word" ?
+                    await _dbService.GetOutputFormatId("Word") :
+                    await _dbService.GetOutputFormatId("Excel");
+
+                // Catat ke history sebelum proses dimulai
+                int historyId = await _dbService.LogHistoryAsync(
+                    _currentUserId,
+                    inputFileTypeId,
+                    outputFormatId,
+                    prompt,
+                    mode);
+
+                // Debugging parameter
+                System.Diagnostics.Debug.WriteLine($"Calling Python with: " +
+                    $"mode={mode}, " +
+                    $"format={outputFormat}, " +
+                    $"file={(mode == "prompt-only" ? "none" : selectedFilePath ?? "none")}, " +
+                    $"prompt_length={prompt.Length}");
+
+                // Tentukan file path yang akan dikirim ke Python
+                string pythonFilePath = (mode == "prompt-only") ? "none" : selectedFilePath ?? "none";
+
+                string result = await PythonRunner.RunPythonScriptAsync(
+                    pythonFilePath,
+                    outputTextPath,
+                    prompt,
+                    outputFormat,
+                    mode
+                );
+
+                // Hentikan timer dan dapatkan waktu proses
+                _processTimer.Stop();
+                int processingTimeMs = (int)_processTimer.ElapsedMilliseconds;
+
+                string outputFileName = string.Empty;
+                string outputFilePath = string.Empty;
+
+                // Cek hasil
+                if (result == "OK" || result == "Success")  // Python script mengembalikan "OK" jika sukses
+                {
+                    if (File.Exists(outputTextPath))
+                    {
+                        string hasil = File.ReadAllText(outputTextPath);
+
+                        // Cek apakah hasil mengandung error
+                        if (hasil.StartsWith("[ERROR]"))
+                        {
+                            OutputBox.Text = $"Proses gagal: {hasil}";
+                            await _dbService.UpdateHistoryStatusAsync(historyId, false, processingTimeMs);
+                            return;
+                        }
+
+                        OutputBox.Text = hasil;
+
+                        // Untuk format Excel, cari file parsed
+                        if (outputFormat == "excel")
+                        {
+                            string parsedExcelPath = PythonRunner.GetParsedExcelPath(outputTextPath);
+
+                            if (File.Exists(parsedExcelPath))
+                            {
+                                outputFilePath = parsedExcelPath;
+                                outputFileName = System.IO.Path.GetFileName(parsedExcelPath);
+                                ResultFileText.Text = outputFileName;
+                            }
+                            else
+                            {
+                                OutputBox.Text += "\n\n[INFO] File Excel parsing sedang diproses...";
+
+                                // Tunggu sebentar untuk proses parsing
+                                await Task.Delay(2000);
+
+                                if (File.Exists(parsedExcelPath))
+                                {
+                                    outputFilePath = parsedExcelPath;
+                                    outputFileName = System.IO.Path.GetFileName(parsedExcelPath);
+                                    ResultFileText.Text = outputFileName;
+                                    OutputBox.Text = OutputBox.Text.Replace("[INFO] File Excel parsing sedang diproses...",
+                                        "[INFO] File Excel berhasil dibuat.");
+                                }
+                            }
+                        }
+                        else if (outputFormat == "word")
+                        {
+                            // Untuk format Word, cari file output
+                            string basePathWord = outputTextPath.Replace("hasil_output.txt", "hasil_output_output.docx");
+                            if (File.Exists(basePathWord))
+                            {
+                                outputFilePath = basePathWord;
+                                outputFileName = System.IO.Path.GetFileName(basePathWord);
+                                ResultFileText.Text = outputFileName;
+                            }
+                        }
+
+                        // Update history dengan waktu proses
+                        await _dbService.UpdateHistoryProcessingTimeAsync(historyId, processingTimeMs);
+
+                        // Jika ada file output, simpan ke tabel OutputFile
+                        if (!string.IsNullOrEmpty(outputFilePath) && File.Exists(outputFilePath))
+                        {
+                            FileInfo fileInfo = new FileInfo(outputFilePath);
+                            await _dbService.LogOutputFileAsync(
+                                historyId,
+                                outputFileName,
+                                outputFilePath,
+                                fileInfo.Length);
+                        }
+                    }
+                    else
+                    {
+                        OutputBox.Text = "Proses selesai, tetapi file output tidak ditemukan.";
+                        await _dbService.UpdateHistoryStatusAsync(historyId, false, processingTimeMs);
+                    }
+                }
+                else
+                {
+                    OutputBox.Text = $"Proses gagal: {result}";
+                    await _dbService.UpdateHistoryStatusAsync(historyId, false, processingTimeMs);
+                }
+            }
+            catch (Exception ex)
+            {
+                _processTimer.Stop();
+                int processingTimeMs = (int)_processTimer.ElapsedMilliseconds;
+
+                System.Diagnostics.Debug.WriteLine($"Error in RunButton_Click: {ex}");
+
+                string errorMessage = $"Terjadi kesalahan:\n{ex.Message}";
+                if (ex.InnerException != null)
+                {
+                    errorMessage += $"\n\nDetail: {ex.InnerException.Message}";
+                }
+
+                OutputBox.Text = errorMessage;
+                await ShowDialogAsync("Error", errorMessage);
+
+                // Update history jika sudah tercatat
+                try
+                {
+                    // Kita tidak tahu historyId di sini, jadi cukup log error
+                    System.Diagnostics.Debug.WriteLine($"Process failed with exception: {ex}");
+                }
+                catch
+                {
+                    // Silent fail untuk logging
+                }
             }
         }
 
         // ... (kode lainnya tetap sama)
         private async void FileToFileButton_Click(object sender, RoutedEventArgs e)
-{
-    ModeBox.SelectedIndex = 0;
-    await SelectFileAsync();
-}
+        {
+            ModeBox.SelectedIndex = 0;
+            await SelectFileAsync();
+        }
 
-private async void PromptToFileButton_Click(object sender, RoutedEventArgs e)
-{
-    ModeBox.SelectedIndex = 2;
-    await ShowDialogAsync("Reminder", "Please select your output format (Word or Excel) before proceeding.");
-    PromptBox.Focus(FocusState.Programmatic);
-}
+        private async void PromptToFileButton_Click(object sender, RoutedEventArgs e)
+        {
+            ModeBox.SelectedIndex = 2;
+            await ShowDialogAsync("Reminder", "Please select your output format (Word or Excel) before proceeding.");
+            PromptBox.Focus(FocusState.Programmatic);
+        }
 
-private async void OcrToFileButton_Click(object sender, RoutedEventArgs e)
-{
-    ModeBox.SelectedIndex = 1;
-    await SelectFileAsync();
-}
+        private async void OcrToFileButton_Click(object sender, RoutedEventArgs e)
+        {
+            ModeBox.SelectedIndex = 1;
+            await SelectFileAsync();
+        }
 
         private async void HistoryButton_Click(object sender, RoutedEventArgs e)
         {
@@ -300,7 +419,7 @@ private async void OcrToFileButton_Click(object sender, RoutedEventArgs e)
 
                         conversionInfo.Children.Add(new TextBlock
                         {
-                            Text = $"{history.ProcessDate:dd/MM/yyyy HH:mm} • {history.ProcessingTime}ms",
+                            Text = $"{history.ProcessDate:dd/MM/yyyy HH:mm} ? {history.ProcessingTime}ms",
                             FontSize = 12,
                             Foreground = new SolidColorBrush(Microsoft.UI.Colors.Gray)
                         });
@@ -367,82 +486,82 @@ private async void OcrToFileButton_Click(object sender, RoutedEventArgs e)
             OutputBox.Text = $"Current User ID: {_currentUserId}";
         }
         private async void OutputFormatButton_Click(object sender, RoutedEventArgs e)
-{
-    Button clickedButton = sender as Button;
-    string format = clickedButton.Tag.ToString();
-
-    WordFormatButton.Style = Resources["DefaultFormatButtonStyle"] as Style;
-    ExcelFormatButton.Style = Resources["DefaultFormatButtonStyle"] as Style;
-
-    clickedButton.Style = Resources["SelectedFormatButtonStyle"] as Style;
-    OutputFormatBox.SelectedIndex = format == "word" ? 2 : 1;
-
-    // Save user's format preference
-    await _dbService.SaveUserPreferredFormatAsync(_currentUserId, format);
-}
-
-private void RefreshPromptButton_Click(object sender, RoutedEventArgs e)
-{
-    PromptBox.Text = "";
-    selectedFilePath = "";
-    OutputBox.Text = "";
-    OutputFormatBox.SelectedIndex = 0;
-    ModeBox.SelectedIndex = 0;
-
-    WordFormatButton.Style = Resources["DefaultFormatButtonStyle"] as Style;
-    ExcelFormatButton.Style = Resources["DefaultFormatButtonStyle"] as Style;
-
-    WelcomePanel.Visibility = Visibility.Visible;
-    AnswerBox.Visibility = Visibility.Collapsed;
-}
-private void HomeButton_Click(object sender, RoutedEventArgs e)
-{
-    // Navigate to the HomePage
-    this.Frame.Navigate(typeof(DataWizard.UI.Pages.HomePage));
-}
-
-private async void AddAttachmentButton_Click(object sender, RoutedEventArgs e)
-{
-    await SelectFileAsync();
-}
-
-private async void UseImageButton_Click(object sender, RoutedEventArgs e)
-{
-    ModeBox.SelectedIndex = 1;
-    await SelectFileAsync();
-}
-
-private async void SaveFileButton_Click(object sender, RoutedEventArgs e)
-{
-    var savePicker = new FileSavePicker();
-    savePicker.SuggestedStartLocation = PickerLocationId.DocumentsLibrary;
-    savePicker.FileTypeChoices.Add("Excel Files", new List<string>() { ".xlsx" });
-    savePicker.FileTypeChoices.Add("Word Documents", new List<string>() { ".docx" });
-    savePicker.SuggestedFileName = ResultFileText.Text;
-
-    var hwnd = WinRT.Interop.WindowNative.GetWindowHandle(App.Window);
-    WinRT.Interop.InitializeWithWindow.Initialize(savePicker, hwnd);
-
-    var file = await savePicker.PickSaveFileAsync();
-    if (file != null)
-    {
-        try
         {
-            // Get the current folder ID (you'll need to implement this based on your UI)
-            int currentFolderId = 1; // Temporary hardcoded folder ID for testing
+            Button clickedButton = sender as Button;
+            string format = clickedButton.Tag.ToString();
 
-            // Save file reference to database
-            await _dbService.SaveFileToFolderAsync(_currentUserId, currentFolderId,
-                file.Name, file.Path);
+            WordFormatButton.Style = Resources["DefaultFormatButtonStyle"] as Style;
+            ExcelFormatButton.Style = Resources["DefaultFormatButtonStyle"] as Style;
 
-            OutputBox.Text = $"File saved to: {file.Path}";
+            clickedButton.Style = Resources["SelectedFormatButtonStyle"] as Style;
+            OutputFormatBox.SelectedIndex = format == "word" ? 2 : 1;
+
+            // Save user's format preference
+            await _dbService.SaveUserPreferredFormatAsync(_currentUserId, format);
         }
-        catch (Exception ex)
+
+        private void RefreshPromptButton_Click(object sender, RoutedEventArgs e)
         {
-            await ShowDialogAsync("Error", $"Error saving file: {ex.Message}");
+            PromptBox.Text = "";
+            selectedFilePath = "";
+            OutputBox.Text = "";
+            OutputFormatBox.SelectedIndex = 0;
+            ModeBox.SelectedIndex = 0;
+
+            WordFormatButton.Style = Resources["DefaultFormatButtonStyle"] as Style;
+            ExcelFormatButton.Style = Resources["DefaultFormatButtonStyle"] as Style;
+
+            WelcomePanel.Visibility = Visibility.Visible;
+            AnswerBox.Visibility = Visibility.Collapsed;
         }
-    }
-}
+        private void HomeButton_Click(object sender, RoutedEventArgs e)
+        {
+            // Navigate to the HomePage
+            this.Frame.Navigate(typeof(DataWizard.UI.Pages.HomePage));
+        }
+
+        private async void AddAttachmentButton_Click(object sender, RoutedEventArgs e)
+        {
+            await SelectFileAsync();
+        }
+
+        private async void UseImageButton_Click(object sender, RoutedEventArgs e)
+        {
+            ModeBox.SelectedIndex = 1;
+            await SelectFileAsync();
+        }
+
+        private async void SaveFileButton_Click(object sender, RoutedEventArgs e)
+        {
+            var savePicker = new FileSavePicker();
+            savePicker.SuggestedStartLocation = PickerLocationId.DocumentsLibrary;
+            savePicker.FileTypeChoices.Add("Excel Files", new List<string>() { ".xlsx" });
+            savePicker.FileTypeChoices.Add("Word Documents", new List<string>() { ".docx" });
+            savePicker.SuggestedFileName = ResultFileText.Text;
+
+            var hwnd = WinRT.Interop.WindowNative.GetWindowHandle(App.Window);
+            WinRT.Interop.InitializeWithWindow.Initialize(savePicker, hwnd);
+
+            var file = await savePicker.PickSaveFileAsync();
+            if (file != null)
+            {
+                try
+                {
+                    // Get the current folder ID (you'll need to implement this based on your UI)
+                    int currentFolderId = 1; // Temporary hardcoded folder ID for testing
+
+                    // Save file reference to database
+                    await _dbService.SaveFileToFolderAsync(_currentUserId, currentFolderId,
+                        file.Name, file.Path);
+
+                    OutputBox.Text = $"File saved to: {file.Path}";
+                }
+                catch (Exception ex)
+                {
+                    await ShowDialogAsync("Error", $"Error saving file: {ex.Message}");
+                }
+            }
+        }
 
     }
 }
